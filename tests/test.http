@@ -1,0 +1,38 @@
+# curl --location --request DELETE 'localhost:1323/users/1'
+DELETE localhost:1323/users/1
+
+###
+
+# curl --location --request GET 'localhost:1323/users'
+GET localhost:1323/users
+
+###
+
+# curl --location --request POST 'localhost:1323/users'
+#--header 'Content-Type: application/json'
+#--data-raw '{
+#    "name":"Eron Mask"
+#}'
+POST localhost:1323/users
+Content-Type: application/json
+
+{
+    "name":"Eron Mask"
+}
+
+###
+
+# curl --location --request POST 'localhost:1323/users'
+#--header 'Content-Type: application/json'
+#--data-raw '{
+#    "name":"J.Y Park"
+#}'
+POST localhost:1323/users
+Content-Type: application/json
+
+{
+    "name":"J.Y Park"
+}
+
+###
+
