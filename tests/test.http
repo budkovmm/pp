@@ -1,38 +1,29 @@
-# curl --location --request DELETE 'localhost:1323/users/1'
-DELETE localhost:1323/users/1
-
-###
-
-# curl --location --request GET 'localhost:1323/users'
-GET localhost:1323/users
-
-###
-
-# curl --location --request POST 'localhost:1323/users'
+# curl --location --request POST 'http://localhost:8080/role'
 #--header 'Content-Type: application/json'
 #--data-raw '{
-#    "name":"Eron Mask"
+#  "name": "admin"
 #}'
-POST localhost:1323/users
+POST http://localhost:8080/api/v1/role
 Content-Type: application/json
 
 {
-    "name":"Eron Mask"
+  "name": "admi9199"
 }
 
 ###
+GET http://localhost:8080/api/v1/role
 
-# curl --location --request POST 'localhost:1323/users'
-#--header 'Content-Type: application/json'
-#--data-raw '{
-#    "name":"J.Y Park"
-#}'
-POST localhost:1323/users
+###
+GET http://localhost:8080/api/v1/role/52
+
+###
+DELETE http://localhost:8080/api/v1/role/50
+
+
+###
+PUT http://localhost:8080/api/v1/role/52
 Content-Type: application/json
 
 {
-    "name":"J.Y Park"
+  "name": "a"
 }
-
-###
-
