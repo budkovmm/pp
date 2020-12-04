@@ -28,5 +28,6 @@ func GetDbConnection() *sqlx.DB {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("Succesfully connected to DB")
 	return db
 }

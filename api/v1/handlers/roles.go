@@ -87,7 +87,7 @@ func UpdateRole(w http.ResponseWriter, r *http.Request) 	{
 	defer r.Body.Close()
 	role.ID = int64(id)
 
-	updatedRole, err := models.UpdateRole(r.Context(), role.ID, role.Name);
+	updatedRole, err := models.UpdateRole(r.Context(), role.ID, role.Name)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
