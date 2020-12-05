@@ -1,21 +1,11 @@
 package utils
 
 import (
-	"context"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"log"
-	"net/http"
 	"os"
 )
-
-func InjectDB(db *sqlx.DB, next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), "db", db)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	}
-}
 
 func GetDbConnection() *sqlx.DB {
 	dbUser := os.Getenv(PgUser)
