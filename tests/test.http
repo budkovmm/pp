@@ -7,21 +7,21 @@ POST http://localhost:8080/api/v1/role
 Content-Type: application/json
 
 {
-  "name": "admi9199"
+  "name": "admi999"
 }
 
 ###
 GET http://localhost:8080/api/v1/role
 
 ###
-GET http://localhost:8080/api/v1/role/52
+GET http://localhost:8080/api/v1/role/3
 
 ###
-DELETE http://localhost:8080/api/v1/role/50
+DELETE http://localhost:8080/api/v1/role/3
 
 
 ###
-PUT http://localhost:8080/api/v1/role/52
+PUT http://localhost:8080/api/v1/role/3
 Content-Type: application/json
 
 {
