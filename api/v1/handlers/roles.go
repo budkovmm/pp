@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -27,14 +28,13 @@ func getLimitOffset(r *http.Request) (limit, offset int){
 	return limit, offset
 }
 
-func checkLimitOffset(limit, offset int) (checkedLimit, checkedOffset int){
-	if limit > 10 || limit < 1 {
-		checkedLimit = 10
+func checkLimitOffset(limit, offset *int) {
+	if *limit > 10 || *limit < 1 {
+		*limit = 10
 	}
-	if offset < 0 {
-		checkedOffset = 0
+	if *offset < 0 {
+		*offset = 0
 	}
-	return checkedLimit, checkedOffset
 }
 
 func parseCreateRolePayload(r *http.Request, role *models.Role) error {
@@ -73,8 +73,10 @@ var GetRole = func(db* sqlx.DB) http.HandlerFunc {
 var GetRoles = func(db* sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		limit, offset := getLimitOffset(r)
-		checkedLimit, checkedOffset := checkLimitOffset(limit, offset)
-		products, err := models.GetRoles(db, checkedLimit, checkedOffset)
+		log.Printf("Limit is %d | Offset is %d", limit, offset)
+		checkLimitOffset(&limit, &offset)
+		log.Printf("Limit is %d | Offset is %d", limit, offset)
+		products, err := models.GetRoles(db, limit, offset)
 		if err != nil {
 			err = utils.DBInternalError
 			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
