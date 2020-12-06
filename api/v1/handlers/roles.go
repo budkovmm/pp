@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -73,9 +72,7 @@ var GetRole = func(db* sqlx.DB) http.HandlerFunc {
 var GetRoles = func(db* sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		limit, offset := getLimitOffset(r)
-		log.Printf("Limit is %d | Offset is %d", limit, offset)
 		checkLimitOffset(&limit, &offset)
-		log.Printf("Limit is %d | Offset is %d", limit, offset)
 		products, err := models.GetRoles(db, limit, offset)
 		if err != nil {
 			err = utils.DBInternalError
