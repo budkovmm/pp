@@ -1,13 +1,18 @@
 package models
 
 import (
+	"database/sql"
+	"errors"
 	"github.com/jmoiron/sqlx"
+	"pp/api/utils"
 	"strconv"
 )
 
+type UserID int64
+
 // Role schema of the roles table
 type Role struct {
-	ID        int64  `json:"id" db:"id"`
+	ID        UserID  `json:"id" db:"id"`
 	Name      string `json:"name" db:"name"`
 	CreatedAt string `json:"createdAt" db:"created_at"`
 	UpdatedAt string `json:"updatedAt" db:"updated_at"`
@@ -35,7 +40,7 @@ func CreateRole(db * sqlx.DB, name string) (*Role, error) {
 	return &role, nil
 }
 
-func UpdateRole(db * sqlx.DB, id int64, name string) (*Role, error) {
+func UpdateRole(db * sqlx.DB, id UserID, name string) (*Role, error) {
 	var role Role
 	sqlStatement := `UPDATE roles SET name=($2), updated_at=now() WHERE id=($1) RETURNING id, name, created_at, updated_at`
 
@@ -45,17 +50,25 @@ func UpdateRole(db * sqlx.DB, id int64, name string) (*Role, error) {
 	return &role, nil
 }
 
-func DeleteRole(db * sqlx.DB, id int64) error {
+func DeleteRole(db * sqlx.DB, id UserID) error {
 	sqlStatement := `DELETE FROM roles WHERE id=($1)`
 	_, err := db.Exec(sqlStatement, id)
 	return err
 }
 
-func GetRoles(db * sqlx.DB, start, count int) ([]Role, error) {
+func GetRoles(db * sqlx.DB, limit, offset int) ([]Role, error) {
 	sqlStatement := `SELECT id, name, created_at, updated_at FROM roles LIMIT ($1) OFFSET ($2)`
 	var roles []Role
-	if err := db.Select(&roles, sqlStatement, count, start); err != nil {
+	if err := db.Select(&roles, sqlStatement, limit, offset); err != nil {
 		return nil, err
 	}
 	return roles, nil
+}
+
+func CheckGetRolesError(error error) error {
+	if errors.Is(error, sql.ErrNoRows) {
+		return utils.UserNotFoundError
+	} else {
+		return utils.DBInternalError
+	}
 }

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"net/http"
@@ -12,21 +12,56 @@ import (
 	"pp/api/utils"
 )
 
+func getIdFromUrl(r *http.Request) (models.UserID, error) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		return -1, utils.InvalidUserIdError
+	}
+	return models.UserID(int64(id)), nil
+}
+
+func getLimitOffset(r *http.Request) (limit, offset int){
+	limit, _ = strconv.Atoi(r.FormValue("limit"))
+	offset, _ = strconv.Atoi(r.FormValue("offset"))
+	return limit, offset
+}
+
+func checkLimitOffset(limit, offset int) (checkedLimit, checkedOffset int){
+	if limit > 10 || limit < 1 {
+		checkedLimit = 10
+	}
+	if offset < 0 {
+		checkedOffset = 0
+	}
+	return checkedLimit, checkedOffset
+}
+
+func parseCreateRolePayload(r *http.Request, role *models.Role) error {
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(role); err != nil {
+		return utils.InvalidRequestPayload
+	}
+	defer r.Body.Close()
+	return nil
+}
+
 var GetRole = func(db* sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		id, err := getIdFromUrl(r)
+		if errors.Is(err, utils.InvalidUserIdError) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		gotRole, err := models.GetRole(db, int64(id))
+
 		if err != nil {
-			switch err {
-			case sql.ErrNoRows:
-				utils.RespondWithError(w, http.StatusNotFound, "User not found")
-			default:
+			err = models.CheckGetRolesError(err)
+			if errors.Is(err, utils.UserNotFoundError) {
+				utils.RespondWithError(w, http.StatusNotFound, err.Error())
+			}
+			if errors.Is(err, utils.DBInternalError) {
 				utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			}
 			return
@@ -37,18 +72,11 @@ var GetRole = func(db* sqlx.DB) http.HandlerFunc {
 
 var GetRoles = func(db* sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		count, _ := strconv.Atoi(r.FormValue("count"))
-		start, _ := strconv.Atoi(r.FormValue("start"))
-
-		if count > 10 || count < 1 {
-			count = 10
-		}
-		if start < 0 {
-			start = 0
-		}
-
-		products, err := models.GetRoles(db, start, count)
+		limit, offset := getLimitOffset(r)
+		checkedLimit, checkedOffset := checkLimitOffset(limit, offset)
+		products, err := models.GetRoles(db, checkedLimit, checkedOffset)
 		if err != nil {
+			err = utils.DBInternalError
 			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -60,15 +88,13 @@ var GetRoles = func(db* sqlx.DB) http.HandlerFunc {
 var CreateRole = func(db* sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var role models.Role
-		decoder := json.NewDecoder(r.Body)
-		if err := decoder.Decode(&role); err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
-			return
+		if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 		}
-		defer r.Body.Close()
 
 		createdRole, err := models.CreateRole(db, role.Name)
 		if err != nil {
+			err = utils.DBInternalError
 			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -79,24 +105,21 @@ var CreateRole = func(db* sqlx.DB) http.HandlerFunc {
 
 var UpdateRole = func(db* sqlx.DB) http.HandlerFunc	{
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		id, err := getIdFromUrl(r)
+		if errors.Is(err, utils.InvalidUserIdError) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		var role models.Role
-		decoder := json.NewDecoder(r.Body)
-		if err := decoder.Decode(&role); err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Invalid resquest payload")
-			return
+		if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 		}
-		defer r.Body.Close()
-		role.ID = int64(id)
+		role.ID = id
 
 		updatedRole, err := models.UpdateRole(db, role.ID, role.Name)
 		if err != nil {
+			err = utils.DBInternalError
 			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -107,15 +130,15 @@ var UpdateRole = func(db* sqlx.DB) http.HandlerFunc	{
 
 func DeleteRole(db* sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Invalid User ID")
+		id, err := getIdFromUrl(r)
+		if errors.Is(err, utils.InvalidUserIdError) {
+			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		role := models.Role{ID: int64(id)}
+		role := models.Role{ID: id}
 		if err := models.DeleteRole(db, role.ID); err != nil {
+			err = utils.DBInternalError
 			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
