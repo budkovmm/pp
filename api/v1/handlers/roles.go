@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"net/http"
 	"strconv"
 
@@ -45,103 +44,123 @@ func parseCreateRolePayload(r *http.Request, role *models.Role) error {
 	return nil
 }
 
-var GetRole = func(db* sqlx.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := getIdFromUrl(r)
-		if errors.Is(err, utils.InvalidUserIdError) {
-			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
-			return
-		}
+func GetRole(w http.ResponseWriter, r *http.Request) {
+	db, err := utils.GetDbFromContext(r.Context())
 
-		gotRole, err := models.GetRole(db, int64(id))
-
-		if err != nil {
-			err = models.CheckGetRolesError(err)
-			if errors.Is(err, utils.UserNotFoundError) {
-				utils.RespondWithError(w, http.StatusNotFound, err.Error())
-			}
-			if errors.Is(err, utils.DBInternalError) {
-				utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
-			}
-			return
-		}
-		utils.RespondWithJSON(w, http.StatusOK, gotRole)
+	if errors.Is(utils.NoDbInContext, err) {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 	}
+
+	id, err := getIdFromUrl(r)
+	if errors.Is(err, utils.InvalidUserIdError) {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	gotRole, err := models.GetRole(db, int64(id))
+
+	if err != nil {
+		err = models.CheckGetRolesError(err)
+		if errors.Is(err, utils.UserNotFoundError) {
+			utils.RespondWithError(w, http.StatusNotFound, err.Error())
+		}
+		if errors.Is(err, utils.DBInternalError) {
+			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	utils.RespondWithJSON(w, http.StatusOK, gotRole)
 }
 
-var GetRoles = func(db* sqlx.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		limit, offset := getLimitOffset(r)
-		checkLimitOffset(&limit, &offset)
-		products, err := models.GetRoles(db, limit, offset)
-		if err != nil {
-			err = utils.DBInternalError
-			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+func GetRoles(w http.ResponseWriter, r *http.Request) {
+	db, err := utils.GetDbFromContext(r.Context())
 
-		utils.RespondWithJSON(w, http.StatusOK, products)
+	if errors.Is(utils.NoDbInContext, err) {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 	}
+
+	limit, offset := getLimitOffset(r)
+	checkLimitOffset(&limit, &offset)
+	products, err := models.GetRoles(db, limit, offset)
+	if err != nil {
+		err = utils.DBInternalError
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, products)
 }
 
-var CreateRole = func(db* sqlx.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var role models.Role
-		if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
-			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
-		}
+func CreateRole(w http.ResponseWriter, r *http.Request) {
+	db, err := utils.GetDbFromContext(r.Context())
 
-		createdRole, err := models.CreateRole(db, role.Name)
-		if err != nil {
-			err = utils.DBInternalError
-			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		utils.RespondWithJSON(w, http.StatusCreated, createdRole)
+	if errors.Is(utils.NoDbInContext, err) {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 	}
+
+	var role models.Role
+	if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+	}
+
+	createdRole, err := models.CreateRole(db, role.Name)
+	if err != nil {
+		err = utils.DBInternalError
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusCreated, createdRole)
 }
 
-var UpdateRole = func(db* sqlx.DB) http.HandlerFunc	{
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := getIdFromUrl(r)
-		if errors.Is(err, utils.InvalidUserIdError) {
-			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
-			return
-		}
+func UpdateRole(w http.ResponseWriter, r *http.Request)	{
+	db, err := utils.GetDbFromContext(r.Context())
 
-		var role models.Role
-		if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
-			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
-		}
-		role.ID = id
-
-		updatedRole, err := models.UpdateRole(db, role.ID, role.Name)
-		if err != nil {
-			err = utils.DBInternalError
-			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		utils.RespondWithJSON(w, http.StatusOK, updatedRole)
+	if errors.Is(utils.NoDbInContext, err) {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 	}
+
+	id, err := getIdFromUrl(r)
+	if errors.Is(err, utils.InvalidUserIdError) {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var role models.Role
+	if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+	}
+	role.ID = id
+
+	updatedRole, err := models.UpdateRole(db, role.ID, role.Name)
+	if err != nil {
+		err = utils.DBInternalError
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, updatedRole)
 }
 
-func DeleteRole(db* sqlx.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := getIdFromUrl(r)
-		if errors.Is(err, utils.InvalidUserIdError) {
-			utils.RespondWithError(w, http.StatusBadRequest, err.Error())
-			return
-		}
+func DeleteRole(w http.ResponseWriter, r *http.Request) {
+	db, err := utils.GetDbFromContext(r.Context())
 
-		role := models.Role{ID: id}
-		if err := models.DeleteRole(db, role.ID); err != nil {
-			err = utils.DBInternalError
-			utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		utils.RespondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
+	if errors.Is(utils.NoDbInContext, err) {
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 	}
+
+	id, err := getIdFromUrl(r)
+	if errors.Is(err, utils.InvalidUserIdError) {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	role := models.Role{ID: id}
+	if err := models.DeleteRole(db, role.ID); err != nil {
+		err = utils.DBInternalError
+		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
