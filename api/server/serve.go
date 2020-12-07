@@ -6,7 +6,7 @@ import (
 	"pp/api/utils"
 )
 
-func NewServer(db *sqlx.DB, prefix string) (*mux.Router, error) {
+func NewServer(prefix string, db *sqlx.DB) (*mux.Router, error) {
 	r := mux.NewRouter()
 	apiV1 := r.PathPrefix(prefix).Subrouter()
 	for _, v:= range apiRoutes {

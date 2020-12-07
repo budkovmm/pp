@@ -17,7 +17,7 @@ func main()  {
 func serve() error{
 	utils.LoadEnvs()
 	db := utils.GetDbConnection()
-	r, err := server.NewServer(db,"/api/v1")
+	r, err := server.NewServer("/api/v1", db)
 	if err != nil {
 		return err
 	}
