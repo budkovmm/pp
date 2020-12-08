@@ -35,13 +35,14 @@ func checkLimitOffset(limit, offset *int) {
 	}
 }
 
-func parseCreateRolePayload(r *http.Request, role *models.Role) error {
+func parseCreateRolePayload(r *http.Request) (*models.Role, error) {
+	role := new(models.Role)
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(role); err != nil {
-		return utils.InvalidRequestPayload
+		return nil, utils.InvalidRequestPayload
 	}
 	defer r.Body.Close()
-	return nil
+	return role, nil
 }
 
 func GetRole(w http.ResponseWriter, r *http.Request) {
@@ -98,8 +99,8 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 	}
 
-	var role models.Role
-	if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
+	role, err  := parseCreateRolePayload(r)
+	if errors.Is(err, utils.InvalidRequestPayload) {
 		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 	}
 
@@ -126,8 +127,8 @@ func UpdateRole(w http.ResponseWriter, r *http.Request)	{
 		return
 	}
 
-	var role models.Role
-	if err := parseCreateRolePayload(r, &role); errors.Is(err, utils.InvalidRequestPayload) {
+	role, err := parseCreateRolePayload(r)
+	if errors.Is(err, utils.InvalidRequestPayload) {
 		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 	}
 	role.ID = id
