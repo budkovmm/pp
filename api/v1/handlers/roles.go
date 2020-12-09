@@ -4,12 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"gopkg.in/validator.v2"
 	"net/http"
 	"strconv"
 
 	"pp/api/models"
 	"pp/api/utils"
 )
+
+type RoleCreateRequest struct {
+	Name string `validate:"nonzero,nonnil,min=3,max=40,regexp=^[a-zA-Z0-9_.-]*$"`
+}
 
 func getIdFromUrl(r *http.Request) (models.UserID, error) {
 	vars := mux.Vars(r)
@@ -35,14 +40,21 @@ func checkLimitOffset(limit, offset *int) {
 	}
 }
 
-func parseCreateRolePayload(r *http.Request) (*models.Role, error) {
-	role := new(models.Role)
+func parseCreateRolePayload(r *http.Request) (*RoleCreateRequest, error) {
+	rcr := new(RoleCreateRequest)
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(role); err != nil {
+	if err := decoder.Decode(rcr); err != nil {
 		return nil, utils.InvalidRequestPayload
 	}
 	defer r.Body.Close()
-	return role, nil
+	return rcr, nil
+}
+
+func validateCreateRoleRequest(rcr *RoleCreateRequest) error {
+	if err := validator.Validate(rcr); err != nil {
+		return utils.GetValidationError(err.Error())
+	}
+	return nil
 }
 
 func GetRole(w http.ResponseWriter, r *http.Request) {
@@ -97,14 +109,21 @@ func CreateRole(w http.ResponseWriter, r *http.Request) {
 
 	if errors.Is(utils.NoDbInContext, err) {
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	role, err  := parseCreateRolePayload(r)
+	roleCreationRequest, err  := parseCreateRolePayload(r)
 	if errors.Is(err, utils.InvalidRequestPayload) {
 		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	createdRole, err := models.CreateRole(db, role.Name)
+	if err := validateCreateRoleRequest(roleCreationRequest); err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	createdRole, err := models.CreateRole(db, roleCreationRequest.Name)
 	if err != nil {
 		err = utils.DBInternalError
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -122,18 +141,20 @@ func UpdateRole(w http.ResponseWriter, r *http.Request)	{
 	}
 
 	id, err := getIdFromUrl(r)
+
 	if errors.Is(err, utils.InvalidUserIdError) {
 		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	role, err := parseCreateRolePayload(r)
+	roleCreationRequest, err := parseCreateRolePayload(r)
+
 	if errors.Is(err, utils.InvalidRequestPayload) {
 		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 	}
-	role.ID = id
 
-	updatedRole, err := models.UpdateRole(db, role.ID, role.Name)
+	updatedRole, err := models.UpdateRole(db, id, roleCreationRequest.Name)
+
 	if err != nil {
 		err = utils.DBInternalError
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -156,8 +177,7 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := models.Role{ID: id}
-	if err := models.DeleteRole(db, role.ID); err != nil {
+	if err := models.DeleteRole(db, id); err != nil {
 		err = utils.DBInternalError
 		utils.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

@@ -13,4 +13,5 @@ require (
 	github.com/lib/pq v1.8.0
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	golang.org/x/sys v0.0.0-20201202213521-69691e467435 // indirect
+	gopkg.in/validator.v2 v2.0.0-20200605151824-2b28d334fa05
 )
