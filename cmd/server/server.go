@@ -4,8 +4,9 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
-	"pp/api/server"
-	"pp/api/utils"
+	"os"
+	"pp/pkg/utils"
+	"pp/pkg/server"
 )
 
 func main()  {
@@ -16,14 +17,16 @@ func main()  {
 
 func serve() error{
 	utils.LoadEnvs()
-	db := utils.GetDbConnection()
+	apiPort := os.Getenv(utils.HttpApiPort)
+	log.Printf("API PORT IS %s", apiPort)
+	db := utils.GetPgDbConnection()
 	r, err := server.NewServer("/api/v1", db)
 	if err != nil {
 		return err
 	}
 	h := http.Server{
-		Addr:              ":8080",
-		Handler:           r,
+		Addr:    apiPort,
+		Handler: r,
 	}
 	if err = h.ListenAndServe(); err != nil {
 		return err

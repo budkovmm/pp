@@ -13,10 +13,11 @@ const (
 	PgHost     = "POSTGRES_HOST"
 	PgPort     = "POSTGRES_PORT"
 	PgURL      = "POSTGRES_URL"
+	HttpApiPort    = "HTTP_API_PORT"
 )
 
 func LoadEnvs() {
-	err := godotenv.Load("./configs/db/pg.env")
+	err := godotenv.Load("./configs/.env")
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}

@@ -7,17 +7,18 @@ import (
 	"os"
 )
 
-func GetDbConnection() *sqlx.DB {
+func GetPgDbConnection() *sqlx.DB {
 	dbUser := os.Getenv(PgUser)
 	dbPassword := os.Getenv(PgPassword)
 	dbName := os.Getenv(PgDb)
-	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPassword, dbName)
+	dbHost := os.Getenv(PgHost)
+	dsn := fmt.Sprintf("user=%s password=%s host=%s dbname=%s sslmode=disable", dbUser, dbPassword, dbHost, dbName)
 
 	var err error
 	db, err := sqlx.Connect(Postgres, dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Succesfully connected to DB")
+	log.Printf("Succesfully connected to Postgres DB")
 	return db
 }
