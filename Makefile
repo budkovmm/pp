@@ -7,7 +7,7 @@ build:
 
 install-linter:
 	@echo "Installing golangci-lint"
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s latest
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s v1.33.0
 
 docker:
 	docker build -t pp .

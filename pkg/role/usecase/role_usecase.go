@@ -5,12 +5,17 @@ import (
 	"pp/pkg/model"
 )
 
+const (
+	DefaultLimitValue = 10
+	DefaultOffsetValue = 0
+)
+
 func checkLimitOffset(limit, offset *int) {
-	if *limit > 10 || *limit < 1 {
-		*limit = 10
+	if *limit > DefaultLimitValue || *limit < 1 {
+		*limit = DefaultLimitValue
 	}
-	if *offset < 0 {
-		*offset = 0
+	if *offset < DefaultOffsetValue {
+		*offset = DefaultOffsetValue
 	}
 }
 
